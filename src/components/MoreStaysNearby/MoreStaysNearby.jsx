@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import "./MoreStaysNearby.css";
 
 const StarIcon = () => (
@@ -78,12 +78,23 @@ export default function MoreStaysNearby() {
   const trackRef = useRef(null);
   const [page, setPage] = useState(0);
   const totalPages = Math.ceil(STAYS.length / PAGE_SIZE);
+  const isProgrammaticScroll = useRef(false);
+  const scrollTimeout = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    };
+  }, []);
 
   const scrollTo = (dir) => {
     const newPage = page + dir;
     if (newPage < 0 || newPage >= totalPages) return;
     setPage(newPage);
     if (trackRef.current) {
+      isProgrammaticScroll.current = true;
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+      
       const itemWidth =
         trackRef.current.querySelector(".nearby-card")?.offsetWidth || 0;
       const gap = 20;
@@ -91,6 +102,27 @@ export default function MoreStaysNearby() {
         left: newPage * PAGE_SIZE * (itemWidth + gap),
         behavior: "smooth",
       });
+
+      scrollTimeout.current = setTimeout(() => {
+        isProgrammaticScroll.current = false;
+      }, 500);
+    }
+  };
+
+  const handleScroll = () => {
+    if (isProgrammaticScroll.current) return;
+    if (trackRef.current) {
+      const scrollLeft = trackRef.current.scrollLeft;
+      const itemWidth =
+        trackRef.current.querySelector(".nearby-card")?.offsetWidth || 0;
+      const gap = 20;
+      const pageWidth = PAGE_SIZE * (itemWidth + gap);
+      if (pageWidth > 0) {
+        const newPage = Math.round(scrollLeft / pageWidth);
+        if (newPage !== page && newPage >= 0 && newPage < totalPages) {
+          setPage(newPage);
+        }
+      }
     }
   };
 
@@ -161,7 +193,14 @@ export default function MoreStaysNearby() {
         </div>
       </div>
 
-      <div className="nearby-scroll" id="simTrack" ref={trackRef}>
+      <div
+        className="nearby-scroll"
+        id="simTrack"
+        ref={trackRef}
+        onScroll={handleScroll}
+        tabIndex={0}
+        aria-label="More stays nearby"
+      >
         {STAYS.map((stay, i) => (
           <div key={i} className="nearby-card">
             <img src={stay.img} alt={stay.title} loading="lazy" />

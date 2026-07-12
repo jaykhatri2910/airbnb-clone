@@ -56,6 +56,15 @@
   padding-bottom: 4px
 }
 
+.nearby-scroll:focus-visible {
+  outline: 2px solid #ff385c;
+  outline-offset: 2px;
+}
+
+.nearby-scroll:focus {
+  outline: none;
+}
+
 .nearby-scroll::-webkit-scrollbar {
   display: none
 }
